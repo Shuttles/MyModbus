@@ -21,6 +21,7 @@
 #include <stdbool.h>
 
 #define MAX_N 3
+#define PASSWORD 9973
 #define IS_READ(a) ((a >= 1) && (a <= 4))
 #define IS_WRITE(a) ((a >= 5) && (a <= 8))
 

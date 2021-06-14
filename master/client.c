@@ -9,6 +9,7 @@
 #include "../common/common.h"
 #include "../common/tcp_client.h"
 #include "../common/modbus.h"
+#include "../common/color.h"
 
 //功能码
 //1 read coils
@@ -31,14 +32,14 @@ int sockfd;
 struct RequestMsg process_input() {
     struct RequestMsg request;
     int func_code = 0;
-    printf("请输入功能码\n");
+    printf(BLUE_HL("请输入功能码\n"));
     scanf("%d", &func_code);
 
     int slave_addr, data_addr, data;
     if (IS_READ(func_code)) {
-        printf("请依次输入从机地址、数据地址，读取数据个数：");
+        printf(BLUE_HL("请依次输入从机地址、数据地址，读取数据个数："));
     } else {
-        printf("请依次输入从机地址、数据地址、要写入的数据：");
+        printf(BLUE_HL("请依次输入从机地址、数据地址、要写入的数据："));
     }
 
 
@@ -52,18 +53,22 @@ struct RequestMsg process_input() {
 
 void process_readresponse(struct RequestMsg request, struct ReadResponseMsg response) {
     if (response.func_code != request.func_code) {
-        printf("读操作失败！请重试！\n");
+        printf(RED_HL("读操作失败！请重试！\n"));
         return ;
     }
     switch (response.func_code) {
         case 1: {
-            printf("coils : ");
+            printf(YELLOW_HL("coils : "));
         } break;
-        case 2:
+        case 2: {
+            printf(YELLOW_HL("discrete_inputs : "));
+        } break;
         case 3: {
-            printf("Holding_regs : ");
+            printf(YELLOW_HL("Holding_regs : "));
         } break;
-        case 4:
+        case 4: {
+            printf(YELLOW_HL("input_regs : "));
+        } break;
         default:
             break;
     }
@@ -71,7 +76,8 @@ void process_readresponse(struct RequestMsg request, struct ReadResponseMsg resp
     for (int i = 0; i < response.cnt; i++) {
         printf("%d ", response.num[i]);
     }
-    printf("\n");
+    printf("\n\n");
+    printf("------------------------------------------------------------------\n");
     
     return;
 }
@@ -80,8 +86,11 @@ void process_readresponse(struct RequestMsg request, struct ReadResponseMsg resp
 
 void process_writeresponse(struct RequestMsg request, struct RequestMsg write_response) {
     if (write_response.func_code != request.func_code) {
-        printf("写操作失败！请重试！\n");
+        printf(RED_HL("写操作失败！请重试！\n\n"));
+    } else {
+        printf(GREEN_HL("写操作成功！\n\n"));
     } 
+    printf("------------------------------------------------------------------\n");
     return ;
 }
 
@@ -101,6 +110,11 @@ int main() {
         return 1;
     }
     printf("Socket connected.\n");
+
+    //进行安全验证
+    int password = 9973;
+    send(sockfd, (void *)&password, sizeof(password), 0);
+
 
     //进行查询或写request
     while (1) {
