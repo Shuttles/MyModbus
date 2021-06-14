@@ -20,5 +20,7 @@
 #include <fcntl.h>
 #include <stdbool.h>
 
+#define IS_READ(a) ((a >= 1) && (a <= 4))
+#define IS_WRITE(a) ((a >= 5) && (a <= 8))
 
 #endif

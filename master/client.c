@@ -27,7 +27,7 @@ char logfile[50] = {0};
 int sockfd;
 
 
-struct ReadMsg process_input() {
+struct ReadMsg process_input() {//统一返回ReadMsg，在上层判断read还是write
     struct ReadMsg msg;
     int func_num = 0;
     printf("请输入功能码\n");
@@ -41,12 +41,32 @@ struct ReadMsg process_input() {
         msg.data_addr = data_addr;
         msg.data_cnt = data_cnt;
     } else {
-
+        int slave_addr, data_addr, data;
+        printf("请依次输入从机地址、数据地址、要写入的数据：");
+        scanf("%d%d%d", &slave_addr, &data_addr, &data);
+        msg.slave_addr = slave_addr;
+        msg.func_num = func_num;
+        msg.data_addr = data_addr;
+        msg.data_cnt = data;
     }
     
     return msg;
 }
 
+void process_response(struct ReadResponseMsg rmsg) {
+    if (rmsg.func_num == 1) {
+        printf("coils : ");
+    } else {
+
+    }
+
+    for (int i = 0; i < rmsg.cnt; i++) {
+        printf("%d ", rmsg.num[i]);
+    }
+    printf("\n");
+    
+    return;
+}
 
 
 int main() {
@@ -76,11 +96,10 @@ int main() {
         }
         
         //接受response
-        struct ReadResponseMsg rmsg = response_recv(sockfd);
-        for (int i = 0; i < rmsg.cnt; i++) {
-            printf("%d ", rmsg.num[i]);
+        if (IS_READ(msg.func_num)) {//如果是写操作就接受response
+            struct ReadResponseMsg rmsg = response_recv(sockfd);
+            process_response(rmsg);
         }
-        printf("\n");
     }
 
 

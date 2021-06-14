@@ -9,16 +9,9 @@
 #include "modbus.h"
 
 int request_send(int fd, struct ReadMsg msg) {
-    if (msg.func_num >= 1 && msg.func_num <= 4) {
-        //read
-        if (send(fd, (void *)&msg, sizeof(msg), 0) <= 0) {
-            return -1;
-        }
-
-    } else {
-        //write
+    if (send(fd, (void *)&msg, sizeof(msg), 0) <= 0) {
+        return -1;
     }
-
 
     return 0;
 }

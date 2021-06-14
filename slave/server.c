@@ -14,8 +14,8 @@
 //#define MAX_N 3
 char *conf = "./server.conf";
 //四种寄存器
-bool coils[MAX_N + 5] = {1, 0, 1, 0};
-bool discrete_inputs[MAX_N + 5];
+int coils[MAX_N + 5] = {1, 0, 1, 0};
+int discrete_inputs[MAX_N + 5];
 int holding_regs[MAX_N + 5];
 int input_regs[MAX_N + 5];
 
@@ -55,7 +55,23 @@ void process_read_coils(int fd, struct ReadMsg msg) {
     return ;
 }
 
+void bit_changed(int *bit, int data) {
+    *bit = data;
+    return ;
+}
 
+void process_write_a_coil(int fd, struct ReadMsg msg) {
+    bit_changed(&coils[msg.data_addr], msg.data_cnt);
+    return ;
+}
+
+
+void process_write_a_holdingreg(int fd, struct ReadMsg msg) {
+    bit_changed(&holding_regs[msg.data_addr], msg.data_cnt);
+    return ;
+}
+
+//核心--处理request函数
 void process_request(int fd, struct ReadMsg msg) {
     switch (msg.func_num) {
         case 1: {
@@ -64,8 +80,12 @@ void process_request(int fd, struct ReadMsg msg) {
         case 2:
         case 3:
         case 4:
-        case 5:
-        case 6:
+        case 5: {
+            process_write_a_coil(fd, msg);
+        } break;
+        case 6: {
+            process_write_a_holdingreg(fd, msg);
+        } break;
         case 7:
         case 8:
             break;
