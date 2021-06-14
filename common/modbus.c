@@ -24,9 +24,15 @@ struct RequestMsg request_recv(int fd) {
     return msg;
 }
 
-struct ReadResponseMsg response_recv(int fd) {
+struct ReadResponseMsg readresponse_recv(int fd) {
     struct ReadResponseMsg rmsg;
     recv(fd, (void *)&rmsg, sizeof(rmsg), 0);
 
     return rmsg;
+}
+
+struct RequestMsg writeresponse_recv(int fd) {
+    struct RequestMsg write_response;
+    recv(fd, (void *)&write_response, sizeof(write_response), 0);
+    return write_response;
 }

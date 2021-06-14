@@ -43,37 +43,40 @@ void output_reg() {
     return ;
 }
 
-struct ReadResponseMsg read_data(struct RequestMsg msg) {
-    struct ReadResponseMsg rmsg;
-    rmsg.slave_addr = 1;//后续要改
-    rmsg.cnt = msg.data;
-    switch (msg.func_code) {
+struct ReadResponseMsg read_data(struct RequestMsg request) {
+    struct ReadResponseMsg response;
+    response.slave_addr = 1;//后续要改
+    response.cnt = request.data;
+    switch (request.func_code) {
         case 1: {
-            for (int i = msg.data_addr, j = 0; j < msg.data; j++, i++) {
-                rmsg.num[j] = coils[i];
+            for (int i = request.data_addr, j = 0; j < request.data; j++, i++) {
+                response.num[j] = coils[i];
             }
         } break;
         case 2:
         case 3: {
-            for (int i = msg.data_addr, j = 0; j < msg.data; j++, i++) {
-                rmsg.num[j] = holding_regs[i];
+            for (int i = request.data_addr, j = 0; j < request.data; j++, i++) {
+                response.num[j] = holding_regs[i];
             }
         } break;
+        case 4:
+        default:
+            break;
     }
-    return rmsg;
+    return response;
 }
 
-void process_read_coils(int fd, struct RequestMsg msg) {
-    struct ReadResponseMsg rmsg = read_data(msg);
-    rmsg.func_code = 1;
-    send(fd, (void *)&rmsg, sizeof(rmsg), 0);
+void process_read_coils(int fd, struct RequestMsg request) {
+    struct ReadResponseMsg response = read_data(request);
+    response.func_code = 1;
+    send(fd, (void *)&response, sizeof(response), 0);
     return ;
 }
 
-void process_read_holdingregs(int fd, struct RequestMsg msg) {
-    struct ReadResponseMsg rmsg = read_data(msg);
-    rmsg.func_code = 3;
-    send(fd, (void *)&rmsg, sizeof(rmsg), 0);
+void process_read_holdingregs(int fd, struct RequestMsg request) {
+    struct ReadResponseMsg response = read_data(request);
+    response.func_code = 3;
+    send(fd, (void *)&response, sizeof(response), 0);
     return ;
 }
 
@@ -83,33 +86,35 @@ void bit_changed(int *bit, int data) {
     return ;
 }
 
-void process_write_a_coil(int fd, struct RequestMsg msg) {
-    bit_changed(&coils[msg.data_addr], msg.data);
+void process_write_a_coil(int fd, struct RequestMsg request) {
+    bit_changed(&coils[request.data_addr], request.data);
+    send(fd, (void *)&request, sizeof(request), 0);
     return ;
 }
 
 
-void process_write_a_holdingreg(int fd, struct RequestMsg msg) {
-    bit_changed(&holding_regs[msg.data_addr], msg.data);
+void process_write_a_holdingreg(int fd, struct RequestMsg request) {
+    bit_changed(&holding_regs[request.data_addr], request.data);
+    send(fd, (void *)&request, sizeof(request), 0);
     return ;
 }
 
 //核心--处理request函数
-void process_request(int fd, struct RequestMsg msg) {
-    switch (msg.func_code) {
+void process_request(int fd, struct RequestMsg request) {
+    switch (request.func_code) {
         case 1: {
-            process_read_coils(fd, msg);
+            process_read_coils(fd, request);
         } break;
         case 2:
         case 3: {
-            process_read_holdingregs(fd, msg);
+            process_read_holdingregs(fd, request);
         } break;
         case 4:
         case 5: {
-            process_write_a_coil(fd, msg);
+            process_write_a_coil(fd, request);
         } break;
         case 6: {
-            process_write_a_holdingreg(fd, msg);
+            process_write_a_holdingreg(fd, request);
         } break;
         case 7:
         case 8:
@@ -123,7 +128,7 @@ void process_request(int fd, struct RequestMsg msg) {
 
 int main() {
     int port, server_listen, sockfd;
-    struct RequestMsg msg;
+    struct RequestMsg request;
     port = atoi(get_value(conf, "SERVER_PORT"));
 
     //创建监听状态的socket
@@ -145,11 +150,11 @@ int main() {
     //while循环－－处理request并返回response
     while (1) {
         //收消息
-        msg = request_recv(sockfd);
+        request = request_recv(sockfd);
         printf("Request received\n");
 
         //处理request并返回response
-        process_request(sockfd, msg);
+        process_request(sockfd, request);
 
         //输出各个寄存器的情况
         output_reg();

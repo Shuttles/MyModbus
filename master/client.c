@@ -29,7 +29,7 @@ int sockfd;
 
 //处理输入
 struct RequestMsg process_input() {
-    struct RequestMsg msg;
+    struct RequestMsg request;
     int func_code = 0;
     printf("请输入功能码\n");
     scanf("%d", &func_code);
@@ -43,15 +43,19 @@ struct RequestMsg process_input() {
 
 
     scanf("%d%d%d", &slave_addr, &data_addr, &data);
-    msg.slave_addr = slave_addr;
-    msg.func_code = func_code;
-    msg.data_addr = data_addr;
-    msg.data = data;
-    return msg;
+    request.slave_addr = slave_addr;
+    request.func_code = func_code;
+    request.data_addr = data_addr;
+    request.data = data;
+    return request;
 }
 
-void process_response(struct ReadResponseMsg rmsg) {
-    switch (rmsg.func_code) {
+void process_readresponse(struct RequestMsg request, struct ReadResponseMsg response) {
+    if (response.func_code != request.func_code) {
+        printf("读操作失败！请重试！\n");
+        return ;
+    }
+    switch (response.func_code) {
         case 1: {
             printf("coils : ");
         } break;
@@ -64,8 +68,8 @@ void process_response(struct ReadResponseMsg rmsg) {
             break;
     }
 
-    for (int i = 0; i < rmsg.cnt; i++) {
-        printf("%d ", rmsg.num[i]);
+    for (int i = 0; i < response.cnt; i++) {
+        printf("%d ", response.num[i]);
     }
     printf("\n");
     
@@ -73,10 +77,19 @@ void process_response(struct ReadResponseMsg rmsg) {
 }
 
 
+
+void process_writeresponse(struct RequestMsg request, struct RequestMsg write_response) {
+    if (write_response.func_code != request.func_code) {
+        printf("写操作失败！请重试！\n");
+    } 
+    return ;
+}
+
 int main() {
     int port;
     char ip[20] = {0};
     
+    //连接前的配置工作
     port = atoi(get_value(conf, "SERVER_PORT"));
     strcpy(ip, get_value(conf, "SERVER_IP"));
     strcpy(logfile, get_value(conf, "LOG_FILE"));
@@ -92,17 +105,16 @@ int main() {
     //进行查询或写request
     while (1) {
         //发送request
-        struct RequestMsg msg = process_input();
-        if (request_send(sockfd, msg) != 0) {
-            printf("request_send失败！\n");
-        } else {
-            printf("request_send成功！\n");
-        }
+        struct RequestMsg request = process_input();
+        request_send(sockfd, request);
         
-        //接受response
-        if (IS_READ(msg.func_code)) {//如果是写操作就接受response
-            struct ReadResponseMsg rmsg = response_recv(sockfd);
-            process_response(rmsg);
+        //接收response
+        if (IS_READ(request.func_code)) {
+            struct ReadResponseMsg read_response = readresponse_recv(sockfd);
+            process_readresponse(request, read_response);
+        } else {
+            struct RequestMsg write_response = writeresponse_recv(sockfd);
+            process_writeresponse(request, write_response);
         }
     }
 

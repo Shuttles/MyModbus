@@ -13,7 +13,7 @@ struct RequestMsg{
     int slave_addr;
     int func_code;
     int data_addr;
-    int data;
+    int data;//如果是读请求，则data代表要读取的寄存器的数量；如果是写请求，则data代表要写入的数据
 };
 
 
@@ -28,6 +28,8 @@ int request_send(int, struct RequestMsg);
 
 struct RequestMsg request_recv(int);
 
-struct ReadResponseMsg response_recv(int);
+struct ReadResponseMsg readresponse_recv(int);
+
+struct RequestMsg writeresponse_recv(int);
 
 #endif
