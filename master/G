@@ -1,1 +1,1 @@
-gcc -o client ../common/common.c ../common/tcp_client.c client.c
+gcc -o client ../common/common.c ../common/tcp_client.c ../common/modbus.c client.c
