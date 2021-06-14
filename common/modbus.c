@@ -8,7 +8,7 @@
 #include "head.h"
 #include "modbus.h"
 
-int request_send(int fd, struct ReadMsg msg) {
+int request_send(int fd, struct RequestMsg msg) {
     if (send(fd, (void *)&msg, sizeof(msg), 0) <= 0) {
         return -1;
     }
@@ -16,8 +16,8 @@ int request_send(int fd, struct ReadMsg msg) {
     return 0;
 }
 
-struct ReadMsg request_recv(int fd) {
-    struct ReadMsg msg;
+struct RequestMsg request_recv(int fd) {
+    struct RequestMsg msg;
     if (recv(fd, (void *)&msg, sizeof(msg), 0) <= 0) {
         perror("recv");
     }

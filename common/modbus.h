@@ -8,18 +8,10 @@
 #ifndef _MODBUS_H
 #define _MODBUS_H
 
-#define MAX_N 3
 
-struct ReadMsg{
+struct RequestMsg{
     int slave_addr;
-    int func_num;
-    int data_addr;
-    int data_cnt;
-};
-
-struct WriteMsg {
-    int slave_addr;
-    int func_num;
+    int func_code;
     int data_addr;
     int data;
 };
@@ -27,14 +19,14 @@ struct WriteMsg {
 
 struct ReadResponseMsg {
     int slave_addr;
-    int func_num;
+    int func_code;
     int cnt;
     int num[MAX_N + 5];
 };
 
-int request_send(int, struct ReadMsg);
+int request_send(int, struct RequestMsg);
 
-struct ReadMsg request_recv(int);
+struct RequestMsg request_recv(int);
 
 struct ReadResponseMsg response_recv(int);
 

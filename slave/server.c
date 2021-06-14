@@ -43,42 +43,67 @@ void output_reg() {
     return ;
 }
 
-void process_read_coils(int fd, struct ReadMsg msg) {
+struct ReadResponseMsg read_data(struct RequestMsg msg) {
     struct ReadResponseMsg rmsg;
     rmsg.slave_addr = 1;//后续要改
-    rmsg.func_num = 1;
-    rmsg.cnt = msg.data_cnt;
-    for (int i = msg.data_addr, j = 0; j < msg.data_cnt; j++, i++) {
-        rmsg.num[j] = coils[i];
+    rmsg.cnt = msg.data;
+    switch (msg.func_code) {
+        case 1: {
+            for (int i = msg.data_addr, j = 0; j < msg.data; j++, i++) {
+                rmsg.num[j] = coils[i];
+            }
+        } break;
+        case 2:
+        case 3: {
+            for (int i = msg.data_addr, j = 0; j < msg.data; j++, i++) {
+                rmsg.num[j] = holding_regs[i];
+            }
+        } break;
     }
+    return rmsg;
+}
+
+void process_read_coils(int fd, struct RequestMsg msg) {
+    struct ReadResponseMsg rmsg = read_data(msg);
+    rmsg.func_code = 1;
     send(fd, (void *)&rmsg, sizeof(rmsg), 0);
     return ;
 }
+
+void process_read_holdingregs(int fd, struct RequestMsg msg) {
+    struct ReadResponseMsg rmsg = read_data(msg);
+    rmsg.func_code = 3;
+    send(fd, (void *)&rmsg, sizeof(rmsg), 0);
+    return ;
+}
+
 
 void bit_changed(int *bit, int data) {
     *bit = data;
     return ;
 }
 
-void process_write_a_coil(int fd, struct ReadMsg msg) {
-    bit_changed(&coils[msg.data_addr], msg.data_cnt);
+void process_write_a_coil(int fd, struct RequestMsg msg) {
+    bit_changed(&coils[msg.data_addr], msg.data);
     return ;
 }
 
 
-void process_write_a_holdingreg(int fd, struct ReadMsg msg) {
-    bit_changed(&holding_regs[msg.data_addr], msg.data_cnt);
+void process_write_a_holdingreg(int fd, struct RequestMsg msg) {
+    bit_changed(&holding_regs[msg.data_addr], msg.data);
     return ;
 }
 
 //核心--处理request函数
-void process_request(int fd, struct ReadMsg msg) {
-    switch (msg.func_num) {
+void process_request(int fd, struct RequestMsg msg) {
+    switch (msg.func_code) {
         case 1: {
             process_read_coils(fd, msg);
         } break;
         case 2:
-        case 3:
+        case 3: {
+            process_read_holdingregs(fd, msg);
+        } break;
         case 4:
         case 5: {
             process_write_a_coil(fd, msg);
@@ -98,7 +123,7 @@ void process_request(int fd, struct ReadMsg msg) {
 
 int main() {
     int port, server_listen, sockfd;
-    struct ReadMsg msg;
+    struct RequestMsg msg;
     port = atoi(get_value(conf, "SERVER_PORT"));
 
     //创建监听状态的socket
@@ -121,8 +146,7 @@ int main() {
     while (1) {
         //收消息
         msg = request_recv(sockfd);
-        printf("Socket received\n");
-        printf("slave_addr = %d, func_num = %d, data_addr = %d, data_cnt = %d\n", msg.slave_addr, msg.func_num, msg.data_addr, msg.data_cnt);
+        printf("Request received\n");
 
         //处理request并返回response
         process_request(sockfd, msg);
